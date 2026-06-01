@@ -106,12 +106,11 @@ const Dashboard = () => {
   return (
     <div className="space-y-8">
       {/* Header Section */}
-      <div className="flex flex-col gap-3 rounded-3xl border border-white/60 bg-white/48 p-6 shadow-xl shadow-slate-950/5 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-950/34 sm:p-8">
-        <h1 className="page-heading">
-          Dashboard
+<div className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.08] p-6 shadow-2xl shadow-black/20 backdrop-blur-2xl sm:p-8 dark:shadow-black/40">       
+<h1 className="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white">          Dashboard
         </h1>
-        <p className="page-subtitle">
-          Welcome to Irshad & Company Management System
+<p className="page-subtitle">
+            Welcome to Irshad & Company Management System
         </p>
       </div>
 
@@ -133,11 +132,11 @@ const Dashboard = () => {
               <div
                 key={office.id}
                 className={`
-                  rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg
-                  ${isDark 
-                    ? 'bg-slate-950/45 border border-slate-800' 
-                    : 'bg-white/68 border border-white'
-                  }
+                  rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg
+${isDark
+  ? 'bg-white/[0.06] border border-white/10 backdrop-blur-xl'
+  : 'bg-white/80 border border-white/60 backdrop-blur-xl'
+}
                 `}
               >
                 <h3 className="mb-4 truncate font-semibold text-slate-950 dark:text-white">{office.name}</h3>

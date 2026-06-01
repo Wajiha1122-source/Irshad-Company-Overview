@@ -21,12 +21,38 @@ function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+    <div className="relative flex min-h-screen text-white overflow-hidden">
+
+      {/* 🌌 ANIMATED LOGIN-STYLE BACKGROUND */}
+      <div className="absolute inset-0 overflow-hidden">
+
+        {/* Base gradient (same as login) */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(20,184,166,0.25),transparent_35rem),radial-gradient(circle_at_80%_30%,rgba(37,99,235,0.25),transparent_40rem),linear-gradient(135deg,#08111f,#0f172a)]" />
+
+        {/* Floating blob 1 */}
+        <div className="absolute w-[420px] h-[420px] rounded-full bg-teal-500/30 blur-[100px] animate-[float_14s_ease-in-out_infinite] top-[-120px] left-[-120px]" />
+
+        {/* Floating blob 2 */}
+        <div className="absolute w-[450px] h-[450px] rounded-full bg-blue-500/30 blur-[110px] animate-[floatReverse_18s_ease-in-out_infinite] bottom-[-150px] right-[-120px]" />
+
+        {/* Floating blob 3 */}
+        <div className="absolute w-[380px] h-[380px] rounded-full bg-indigo-500/20 blur-[120px] animate-[float_20s_ease-in-out_infinite] top-[40%] left-[55%]" />
+      </div>
+
+      {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      <div className="flex-1 flex flex-col min-h-screen" style={{ marginLeft: SIDEBAR_WIDTH }}>
+
+      {/* Main area */}
+      <div
+        className="relative z-10 flex-1 flex flex-col min-h-screen"
+        style={{ marginLeft: SIDEBAR_WIDTH }}
+      >
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-8">
-          <div className="mx-auto w-full max-w-[1600px]">{children}</div>
+
+        <main className="flex-1 overflow-y-auto p-8 relative z-10">
+          <div className="mx-auto w-full max-w-[1600px]">
+            {children}
+          </div>
         </main>
       </div>
     </div>
@@ -41,6 +67,7 @@ function App() {
           <Router>
             <Routes>
               <Route path="/login" element={<Login />} />
+
               <Route
                 path="/*"
                 element={

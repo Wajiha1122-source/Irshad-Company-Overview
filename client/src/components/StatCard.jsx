@@ -20,10 +20,9 @@ const StatCard = ({ title, value, icon: Icon, color, onClick }) => {
       transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
       onClick={onClick}
       className={`
-        surface-card group relative h-[140px] overflow-hidden rounded-2xl p-6
-        text-slate-950 dark:text-white
+surface-card group relative h-[140px] overflow-hidden rounded-3xl p-6        text-slate-950 dark:text-white
         cursor-pointer transition-all duration-300
-        hover:shadow-md dark:hover:shadow-black/30
+        hover:shadow-2xl dark:hover:shadow-black/30
       `}
     >
       <div className="relative z-10 flex h-full flex-col justify-between">

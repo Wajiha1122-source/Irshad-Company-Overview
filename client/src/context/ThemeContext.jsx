@@ -1,25 +1,14 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext } from 'react';
 
 const ThemeContext = createContext(null);
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved ? saved === 'dark' : false;
-  });
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
+  // FIXED THEME ONLY (NO DARK/LIGHT SWITCH)
+  const isDark = true;
 
   const toggleTheme = () => {
-    setIsDark(!isDark);
+    // disabled intentionally (no theme switching)
+    console.log('Theme switching disabled: single theme mode');
   };
 
   return (

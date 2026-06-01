@@ -1,54 +1,48 @@
 @import "tailwindcss";
 
-:root {
-  color-scheme: light;
-  --bg: #f8fafc;
-  --bg-soft: #f8fafc;
-  --surface: #ffffff;
-  --surface-strong: #ffffff;
-  --border: rgba(15, 23, 42, 0.1);
-  --text: #0f172a;
-  --muted: #64748b;
-  --primary: #2563eb;
-  --primary-2: #14b8a6;
-  --danger: #e11d48;
-  --shadow: 0 20px 55px rgba(15, 23, 42, 0.12);
-  --shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
-}
+/* =========================
+   GLOBAL DARK THEME ONLY
+   (Login Page Style)
+========================= */
 
-.dark {
+:root {
   color-scheme: dark;
+
   --bg: #08111f;
   --bg-soft: #0d1727;
-  --surface: rgba(15, 23, 42, 0.78);
+  --surface: rgba(255, 255, 255, 0.06);
   --surface-strong: rgba(15, 23, 42, 0.94);
-  --border: rgba(148, 163, 184, 0.16);
+  --border: rgba(255, 255, 255, 0.12);
   --text: #f8fafc;
   --muted: #94a3b8;
+
   --primary: #60a5fa;
   --primary-2: #2dd4bf;
   --danger: #fb7185;
+
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
   --shadow-soft: 0 14px 36px rgba(0, 0, 0, 0.26);
 }
 
+/* =========================
+   BASE STYLES
+========================= */
+
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
 html {
   min-width: 320px;
-  background: var(--bg);
+  background: #08111f;
   scroll-behavior: smooth;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
-  background: #f8fafc;
-  color: var(--text);
+  background: #08111f;
+  color: white;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -58,6 +52,10 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* =========================
+   SELECTION & SCROLLBAR
+========================= */
 
 ::selection {
   background: rgba(20, 184, 166, 0.22);
@@ -82,14 +80,20 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(37, 99, 235, 0.62);
-  border: 3px solid transparent;
-  background-clip: padding-box;
 }
+
+/* =========================
+   FOCUS
+========================= */
 
 :focus-visible {
   outline: 3px solid rgba(20, 184, 166, 0.34);
   outline-offset: 3px;
 }
+
+/* =========================
+   BUTTONS & INPUTS
+========================= */
 
 button {
   font-family: inherit;
@@ -129,35 +133,42 @@ textarea {
   max-width: 100%;
 }
 
+/* =========================
+   COMPONENTS
+========================= */
+
 @layer components {
+
   .page-heading {
-    @apply text-[32px] font-bold leading-tight tracking-normal text-slate-950 dark:text-white;
+    @apply text-[32px] font-bold leading-tight tracking-normal text-white;
   }
 
   .page-subtitle {
-    @apply text-sm text-slate-600 dark:text-slate-400 sm:text-base;
+    @apply text-sm text-slate-300 sm:text-base;
   }
 
+  /* LOGIN STYLE GLASS CARD */
   .surface-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
   }
 
   .primary-button {
-    @apply inline-flex min-h-11 items-center justify-center gap-3 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm dark:bg-white dark:text-slate-950;
+    @apply inline-flex min-h-11 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-blue-500 to-teal-400 px-4 py-2.5 text-sm font-semibold text-white;
   }
 
   .primary-button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+    box-shadow: 0 8px 20px rgba(20, 184, 166, 0.25);
   }
 
   .ghost-button {
-    @apply inline-flex min-h-11 items-center justify-center gap-3 rounded-xl border px-4 py-2.5 text-sm font-medium;
-    border-color: var(--border);
-    background: var(--surface);
-    color: var(--text);
+    @apply inline-flex min-h-11 items-center justify-center gap-3 rounded-xl border px-4 py-2.5 text-sm font-medium text-white;
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .ghost-button:hover {
@@ -166,28 +177,26 @@ textarea {
   }
 
   .field {
-    @apply w-full rounded-xl border px-4 py-2.5 text-sm text-slate-950 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-slate-900/10 dark:text-white;
-    background: #ffffff;
-    border-color: var(--border);
-  }
-
-  .dark .field {
-    background: rgba(2, 6, 23, 0.34);
+    @apply w-full rounded-xl border px-4 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-teal-400/20;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   .chip {
-    @apply inline-flex min-h-11 items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold whitespace-nowrap;
-    border-color: var(--border);
-    background: var(--surface);
-    color: var(--muted);
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-300;
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .chip:hover {
-    color: var(--text);
+    color: white;
     transform: translateY(-1px);
-    box-shadow: var(--shadow-soft);
   }
 }
+
+/* =========================
+   ANIMATION
+========================= */
 
 @keyframes page-in {
   from {
@@ -200,6 +209,10 @@ textarea {
   }
 }
 
+/* =========================
+   REDUCED MOTION
+========================= */
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -209,4 +222,78 @@ textarea {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+/* =========================
+   AMBIENT BACKGROUND GLOWS
+   (SaaS STYLE)
+========================= */
+
+@keyframes float-slow {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(60px, -40px) scale(1.15);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes float-slow-reverse {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(-50px, 30px) scale(1.1);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.glow-blob {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 999px;
+  filter: blur(90px);
+  opacity: 0.25;
+  pointer-events: none;
+}
+/* =========================
+   AMBIENT BACKGROUND ANIMATIONS
+========================= */
+
+@keyframes float {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(60px, -40px) scale(1.1);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes floatReverse {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(-50px, 40px) scale(1.15);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+@keyframes slowFloat {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-pulse {
+  animation: slowFloat 10s ease-in-out infinite;
 }
