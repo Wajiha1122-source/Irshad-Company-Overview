@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import GlassCard from '../components/GlassCard';
-import LoadingSpinner from '../components/LoadingSpinner';
+import SkeletonLoader from '../components/SkeletonLoader';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/axios';
 import { 
@@ -382,13 +382,9 @@ const Reports = () => {
     doc.save('comprehensive-report.pdf');
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="xl" />
-      </div>
-    );
-  }
+ if (loading) {
+  return <SkeletonLoader />;
+}
 
   const reportTypes = [
     {

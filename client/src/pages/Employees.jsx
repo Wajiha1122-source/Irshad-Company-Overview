@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import GlassCard from '../components/GlassCard';
-import LoadingSpinner from '../components/LoadingSpinner';
+import SkeletonLoader from '../components/SkeletonLoader';
 import EmployeeForm from '../components/EmployeeForm';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/axios';
@@ -78,13 +78,9 @@ const Employees = () => {
     emp.designation?.toLowerCase().includes(searchTerm.toLowerCase())
   ), [employees, searchTerm]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="xl" />
-      </div>
-    );
-  }
+if (loading) {
+  return <SkeletonLoader />;
+}
 
   return (
     <div className="space-y-8">

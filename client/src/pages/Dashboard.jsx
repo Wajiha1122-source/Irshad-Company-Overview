@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatCard from '../components/StatCard';
 import GlassCard from '../components/GlassCard';
-import LoadingSpinner from '../components/LoadingSpinner';
+import SkeletonLoader from '../components/SkeletonLoader';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/axios';
 import useRenderCounter from '../hooks/useRenderCounter';
@@ -39,13 +39,9 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="xl" />
-      </div>
-    );
-  }
+ if (loading) {
+  return <SkeletonLoader />;
+}
 
   const cards = [
     {

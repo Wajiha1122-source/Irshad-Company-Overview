@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import GlassCard from '../components/GlassCard';
-import LoadingSpinner from '../components/LoadingSpinner';
+import SkeletonLoader from '../components/SkeletonLoader';
 import InventoryForm from '../components/InventoryForm';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/axios';
@@ -100,13 +100,9 @@ const Inventory = () => {
            categoryName.toLowerCase().includes(searchTerm.toLowerCase());
   }), [items, searchTerm]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="xl" />
-      </div>
-    );
-  }
+ if (loading) {
+  return <SkeletonLoader />;
+}
 
   const types = ['Stationary', 'Devices', 'Appliances', 'Furniture', 'Cleaning'];
 
