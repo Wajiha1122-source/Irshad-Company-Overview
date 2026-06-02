@@ -1,9 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { memo } from 'react';
+import useRenderCounter from '../hooks/useRenderCounter';
 
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = memo(({ isOpen, onClose, title, children }) => {
   const { isDark } = useTheme();
+  useRenderCounter('Modal');
 
   if (!isOpen) return null;
 
@@ -13,7 +16,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/62 p-4 backdrop-blur-md"
+        className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/62 p-4 backdrop-blur-sm"
         onClick={onClose}
       >
         <motion.div
@@ -22,7 +25,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
           exit={{ opacity: 0, scale: 0.96, y: 16 }}
           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           className={`
-            surface-card relative my-8 max-h-[calc(100vh-4rem)] w-full max-w-2xl overflow-y-auto rounded-2xl p-5 sm:p-6
+            surface-card relative mt-16 mb-8 max-h-[calc(100vh-8rem)] w-full max-w-2xl overflow-y-auto rounded-2xl p-5 sm:p-6 transform-gpu
             ${isDark ? 'text-slate-100' : 'text-slate-950'}
           `}
           onClick={(e) => e.stopPropagation()}
@@ -42,6 +45,6 @@ const Modal = ({ isOpen, onClose, title, children }) => {
       </motion.div>
     </AnimatePresence>
   );
-};
+});
 
 export default Modal;

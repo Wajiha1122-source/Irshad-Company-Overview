@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import GlassCard from '../components/GlassCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import InventoryForm from '../components/InventoryForm';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/axios';
+import useRenderCounter from '../hooks/useRenderCounter';
 import { 
   Plus, 
   Search, 
@@ -12,11 +13,14 @@ import {
   Trash2,
   Package,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Save,
+  X
 } from 'lucide-react';
 
 const Inventory = () => {
   const [items, setItems] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [offices, setOffices] = useState([]);
   const [totals, setTotals] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,28 +30,31 @@ const Inventory = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const { isDark } = useTheme();
+  useRenderCounter('Inventory');
 
-  const handleAddItem = () => {
+  const handleAddItem = useCallback(() => {
     setEditingItem(null);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleEditItem = (item) => {
+  const handleEditItem = useCallback((item) => {
     setEditingItem(item);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleDeleteItem = async (id) => {
+  const handleDeleteItem = useCallback(async (id) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
       try {
         await api.delete(`/inventory/items/${id}`);
-        fetchData();
+        setItems(prevItems => prevItems.filter(item => item.id !== id));
       } catch (error) {
         console.error('Error deleting item:', error);
         alert('Error deleting item. Please try again.');
       }
     }
-  };
+  }, []);
+
+
 
   const typeClasses = {
     Stationary: 'text-blue-600 bg-blue-50 dark:bg-blue-950/30',
@@ -61,28 +68,37 @@ const Inventory = () => {
     fetchData();
   }, [selectedType, selectedOffice]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
       const [itemsRes, categoriesRes, officesRes, totalsRes] = await Promise.all([
-        api.get('/inventory/items', { params: { type: selectedType, office_id: selectedOffice } }),
-        api.get('/inventory/categories'),
-        api.get('/offices'),
-        api.get('/inventory/totals', { params: { type: selectedType, office_id: selectedOffice } })
+        api.get('/inventory/items', { params: { type: selectedType, office_id: selectedOffice } }).catch(e => ({ data: { items: [] } })),
+        api.get('/inventory/categories').catch(e => ({ data: { categories: [] } })),
+        api.get('/offices').catch(e => ({ data: { offices: [] } })),
+        api.get('/inventory/totals', { params: { type: selectedType, office_id: selectedOffice } }).catch(e => ({ data: null }))
       ]);
-      setItems(itemsRes.data.items);
-      setOffices(officesRes.data.offices);
-      setTotals(totalsRes.data);
+      setItems(itemsRes.data.items || []);
+      setCategories(categoriesRes.data.categories || []);
+      setOffices(officesRes.data.offices || []);
+      setTotals(totalsRes.data || null);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setItems([]);
+      setCategories([]);
+      setOffices([]);
+      setTotals(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedType, selectedOffice]);
 
-  const filteredItems = items.filter(item =>
-    item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredItems = useMemo(() => items.filter(item => {
+    if (!item) return false;
+    const name = item.name || '';
+    const categoryName = item.category_name || '';
+    return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           categoryName.toLowerCase().includes(searchTerm.toLowerCase());
+  }), [items, searchTerm]);
 
   if (loading) {
     return (
@@ -193,71 +209,52 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* Items Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredItems.map((item) => (
-          <GlassCard key={item.id} hover>
-            <div className="mb-4 flex items-start justify-between gap-4">
-              <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-teal-500 p-3 shadow-md shadow-blue-600/20">
-                <Package size={20} className="text-white" />
-              </div>
-              <span className={`
-                px-3 py-1.5 rounded-full text-xs font-medium
-                ${item.quantity > 10 
-                  ? 'bg-green-100 text-green-700' 
-                  : item.quantity > 0
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-red-100 text-red-700'
-                }
-              `}>
-                {item.quantity > 10 ? 'In Stock' : item.quantity > 0 ? 'Low Stock' : 'Out of Stock'}
-              </span>
-            </div>
-
-            <h3 className="mb-2 truncate font-semibold text-slate-950 dark:text-white">{item.name}</h3>
-            <p className={`mb-4 truncate text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              {item.category_name}
-            </p>
-
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                {item.quantity > 0 ? (
-                  <TrendingUp size={16} className="text-green-500" />
-                ) : (
-                  <TrendingDown size={16} className="text-red-500" />
-                )}
-                <span className="text-xl font-bold text-gray-900 dark:text-white">{item.quantity}</span>
-              </div>
-              <span className={`truncate text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                {item.office_name}
-              </span>
-            </div>
-
-            {item.notes && (
-              <p className={`text-sm mb-4 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-                {item.notes}
-              </p>
-            )}
-
-            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button 
-                onClick={() => handleEditItem(item)}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/50"
-              >
-                <Edit size={14} />
-                Edit
-              </button>
-              <button 
-                onClick={() => handleDeleteItem(item.id)}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50"
-              >
-                <Trash2 size={14} />
-                Delete
-              </button>
-            </div>
-          </GlassCard>
-        ))}
-      </div>
+      {/* Simple Table */}
+      <GlassCard>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <th className={`text-left py-3 px-4 text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Item Name</th>
+                <th className={`text-left py-3 px-4 text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Category</th>
+                <th className={`text-left py-3 px-4 text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Office</th>
+                <th className={`text-center py-3 px-4 text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Quantity</th>
+                <th className={`text-center py-3 px-4 text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Notes</th>
+                <th className={`text-center py-3 px-4 text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredItems.map(item => (
+                <tr key={item.id} className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                  <td className={`py-3 px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{item.name}</td>
+                  <td className={`py-3 px-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{item.category_name}</td>
+                  <td className={`py-3 px-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{item.office_name}</td>
+                  <td className="py-3 px-4 text-center">
+                    <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{item.quantity}</span>
+                  </td>
+                  <td className={`py-3 px-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{item.notes || '-'}</td>
+                  <td className="py-3 px-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => handleEditItem(item)}
+                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg dark:hover:bg-blue-950/30"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg dark:hover:bg-red-950/30"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
 
       {filteredItems.length === 0 && (
         <div className="text-center py-16">

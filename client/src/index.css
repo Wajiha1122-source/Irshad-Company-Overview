@@ -2,7 +2,6 @@
 
 /* =========================
    GLOBAL DARK THEME ONLY
-   (Login Page Style)
 ========================= */
 
 :root {
@@ -73,9 +72,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: rgba(100, 116, 139, 0.42);
-  border: 3px solid transparent;
   border-radius: 999px;
-  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -116,8 +113,7 @@ textarea {
     border-color 180ms ease,
     box-shadow 180ms ease,
     color 180ms ease,
-    opacity 180ms ease,
-    transform 180ms ease;
+    opacity 180ms ease;
 }
 
 button,
@@ -125,11 +121,6 @@ input,
 select,
 textarea {
   min-height: 42px;
-}
-
-input,
-select,
-textarea {
   max-width: 100%;
 }
 
@@ -140,20 +131,30 @@ textarea {
 @layer components {
 
   .page-heading {
-    @apply text-[32px] font-bold leading-tight tracking-normal text-white;
+    @apply text-[32px] font-bold leading-tight text-white;
   }
 
   .page-subtitle {
     @apply text-sm text-slate-300 sm:text-base;
   }
 
-  /* LOGIN STYLE GLASS CARD */
+  /* GLASS CARD (OPTIMIZED) */
   .surface-card {
+    position: relative;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  }
+
+  .surface-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: inherit;
+    z-index: -1;
+    pointer-events: none;
   }
 
   .primary-button {
@@ -195,18 +196,12 @@ textarea {
 }
 
 /* =========================
-   ANIMATION
+   ANIMATION (UNCHANGED)
 ========================= */
 
 @keyframes page-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* =========================
@@ -223,77 +218,25 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
 /* =========================
-   AMBIENT BACKGROUND GLOWS
-   (SaaS STYLE)
+   AMBIENT BACKGROUND (OPTIMIZED)
 ========================= */
-
-@keyframes float-slow {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  50% {
-    transform: translate(60px, -40px) scale(1.15);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
-
-@keyframes float-slow-reverse {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  50% {
-    transform: translate(-50px, 30px) scale(1.1);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
 
 .glow-blob {
   position: absolute;
   width: 420px;
   height: 420px;
   border-radius: 999px;
-  filter: blur(90px);
+  filter: blur(50px);
   opacity: 0.25;
   pointer-events: none;
 }
+
 /* =========================
-   AMBIENT BACKGROUND ANIMATIONS
+   OPTIONAL PERFORMANCE HINT
 ========================= */
 
-@keyframes float {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  50% {
-    transform: translate(60px, -40px) scale(1.1);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
-
-@keyframes floatReverse {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  50% {
-    transform: translate(-50px, 40px) scale(1.15);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
-@keyframes slowFloat {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-  100% { transform: translateY(0px); }
-}
-
-.animate-pulse {
-  animation: slowFloat 10s ease-in-out infinite;
+body {
+  overscroll-behavior: contain;
 }

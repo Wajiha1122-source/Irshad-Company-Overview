@@ -5,6 +5,7 @@ import GlassCard from '../components/GlassCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/axios';
+import useRenderCounter from '../hooks/useRenderCounter';
 import { 
   Users, 
   Package, 
@@ -20,6 +21,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  useRenderCounter('Dashboard');
+  console.log('[Dashboard] Rendered');
 
   useEffect(() => {
     fetchDashboardStats();
@@ -106,7 +109,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-8">
       {/* Header Section */}
-<div className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.08] p-6 shadow-2xl shadow-black/20 backdrop-blur-2xl sm:p-8 dark:shadow-black/40">       
+<div className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.08] p-6 shadow-2xl shadow-black/20 backdrop-blur-md sm:p-8 dark:shadow-black/40">       
 <h1 className="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white">          Dashboard
         </h1>
 <p className="page-subtitle">
@@ -134,8 +137,8 @@ const Dashboard = () => {
                 className={`
                   rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg
 ${isDark
-  ? 'bg-white/[0.06] border border-white/10 backdrop-blur-xl'
-  : 'bg-white/80 border border-white/60 backdrop-blur-xl'
+  ? 'bg-white/[0.06] border border-white/10 backdrop-blur-md'
+  : 'bg-white/80 border border-white/60 backdrop-blur-md'
 }
                 `}
               >

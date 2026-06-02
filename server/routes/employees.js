@@ -27,10 +27,10 @@ router.put('/:id', authorize('Owner', 'Manager'), updateEmployee);
 router.delete('/:id', authorize('Owner'), deleteEmployee);
 
 // Employee-related data routes
-router.post('/:id/work', authorize('Owner', 'Manager'), addEmployeeWork);
-router.post('/:id/authority', authorize('Owner', 'Manager'), addEmployeeAuthority);
-router.post('/:id/assets', authorize('Owner', 'Manager'), addEmployeeAsset);
-router.post('/:id/account-access', authorize('Owner', 'Manager'), addEmployeeAccountAccess);
-router.post('/:id/stationary', authorize('Owner', 'Manager'), addEmployeeStationary);
+router.post('/work', authorize('Owner', 'Manager'), addEmployeeWork);
+router.post('/authority', authorize('Owner', 'Manager'), addEmployeeAuthority);
+router.post('/assets', authorize('Owner', 'Manager'), addEmployeeAsset);
+router.post('/account-access', authorize('Owner', 'Manager'), addEmployeeAccountAccess);
+router.post('/stationary', authorize('Owner', 'Manager'), addEmployeeStationary);
 
 module.exports = router;

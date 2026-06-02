@@ -2,11 +2,13 @@ import { Menu, Bell, Search } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import useRenderCounter from '../hooks/useRenderCounter';
 
 const Header = ({ onMenuClick }) => {
   const { isDark } = useTheme();
   const { user } = useAuth();
   const location = useLocation();
+  useRenderCounter('Header');
 
   const pageTitles = {
     '/dashboard': 'Dashboard',

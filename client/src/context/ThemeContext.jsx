@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 
 const ThemeContext = createContext(null);
 
@@ -7,12 +7,18 @@ export const ThemeProvider = ({ children }) => {
   const isDark = true;
 
   const toggleTheme = () => {
-    // disabled intentionally (no theme switching)
+    // disabled intentionally (single theme mode)
     console.log('Theme switching disabled: single theme mode');
   };
 
+  // ✅ IMPORTANT FIX: stable reference (prevents re-renders)
+  const value = useMemo(() => ({
+    isDark,
+    toggleTheme,
+  }), []);
+
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

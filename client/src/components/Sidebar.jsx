@@ -12,16 +12,17 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { SIDEBAR_WIDTH } from '../constants/layout';
+import useRenderCounter from '../hooks/useRenderCounter';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
+  useRenderCounter('Sidebar');
 
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/employees', icon: Users, label: 'Employees' },
     { path: '/inventory', icon: Package, label: 'Inventory' },
-    { path: '/assets', icon: Laptop, label: 'Asset Assignments' },
     { path: '/analytics', icon: BarChart3, label: 'Analytics' },
     { path: '/reports', icon: FileText, label: 'Reports' },
   ];
@@ -44,7 +45,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           fixed left-0 top-0 z-50 h-full
           bg-[rgba(255,255,255,0.06)]
           border-r border-white/10
-          backdrop-blur-2xl
+          backdrop-blur-md
           shadow-2xl shadow-black/40
           text-white
           transform transition-transform duration-300 ease-out

@@ -36,6 +36,8 @@ const Analytics = () => {
         api.get('/analytics/employees'),
         api.get('/analytics/inventory')
       ]);
+      console.log('Employee stats:', employeeRes.data);
+      console.log('Inventory stats:', inventoryRes.data);
       setEmployeeStats(employeeRes.data);
       setInventoryStats(inventoryRes.data);
     } catch (error) {
