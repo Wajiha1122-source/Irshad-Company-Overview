@@ -20,11 +20,13 @@ const AssetForm = ({ isOpen, onClose, asset, onSuccess }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     fetchData();
     if (asset) {
       setFormData(asset);
     }
-  }, [asset]);
+  }, [isOpen, asset]);
 
   const fetchData = async () => {
     try {
@@ -32,8 +34,8 @@ const AssetForm = ({ isOpen, onClose, asset, onSuccess }) => {
         api.get('/offices'),
         api.get('/employees')
       ]);
-      setOffices(officesRes.data.offices);
-      setEmployees(employeesRes.data.employees);
+      setOffices(officesRes.data.offices || officesRes.data.data || []);
+      setEmployees(employeesRes.data.employees || employeesRes.data.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     }

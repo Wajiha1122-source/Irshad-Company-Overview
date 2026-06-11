@@ -1,14 +1,10 @@
 import { Menu, Bell, Search } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import useRenderCounter from '../hooks/useRenderCounter';
 
 const Header = ({ onMenuClick }) => {
-  const { isDark } = useTheme();
   const { user } = useAuth();
   const location = useLocation();
-  useRenderCounter('Header');
 
   const pageTitles = {
     '/dashboard': 'Dashboard',
@@ -21,11 +17,8 @@ const Header = ({ onMenuClick }) => {
   const title = pageTitles[location.pathname] || 'Dashboard';
 
   return (
-    <header className={`
-      sticky top-0 z-30 h-[72px] border-b
-      ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}
-    `}>
-      <div className="flex h-full items-center justify-between gap-8 px-8">
+    <header className="sticky top-0 z-30 h-[72px] border-b border-slate-800 bg-slate-950">
+      <div className="flex h-full items-center justify-between gap-3 px-4 sm:px-6 lg:gap-8 lg:px-8">
         <div className="flex min-w-0 items-center gap-4">
           <button
             onClick={onMenuClick}
@@ -34,7 +27,7 @@ const Header = ({ onMenuClick }) => {
           >
             <Menu size={20} />
           </button>
-          <h1 className="truncate text-[32px] font-bold leading-tight text-slate-950 dark:text-white">{title}</h1>
+          <h1 className="truncate text-xl font-bold leading-tight text-white sm:text-2xl lg:text-[32px]">{title}</h1>
         </div>
           
         <div className="hidden flex-1 justify-center md:flex">
@@ -43,14 +36,7 @@ const Header = ({ onMenuClick }) => {
             <input
               type="text"
               placeholder="Search records, reports, assets..."
-              className={`
-                h-11 w-full rounded-xl py-2.5 pl-11 pr-4 text-sm shadow-sm
-                ${isDark 
-                  ? 'bg-slate-900 border-slate-800 text-white placeholder-slate-500' 
-                  : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
-                }
-                border focus:outline-none focus:ring-4 focus:ring-slate-900/10
-              `}
+              className="h-11 w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 pl-11 pr-4 text-sm text-white placeholder-slate-400 shadow-sm focus:outline-none focus:ring-4 focus:ring-teal-400/20"
             />
           </div>
         </div>
@@ -61,13 +47,13 @@ const Header = ({ onMenuClick }) => {
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
           </button>
 
-          <div className={`flex min-w-0 items-center gap-4 border-l pl-6 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-semibold text-white dark:bg-white dark:text-slate-950">
+          <div className="flex min-w-0 items-center gap-3 border-l border-slate-800 pl-3 sm:gap-4 sm:pl-6">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-sm font-semibold text-white ring-1 ring-slate-700">
               {user?.full_name?.charAt(0) || 'U'}
             </div>
             <div className="hidden min-w-0 sm:block">
-              <p className="max-w-40 truncate text-sm font-medium text-slate-900 dark:text-white">{user?.full_name}</p>
-              <p className="truncate text-xs text-slate-500">{user?.role}</p>
+              <p className="max-w-40 truncate text-sm font-semibold text-white">{user?.full_name}</p>
+              <p className="truncate text-xs text-slate-300">{user?.role}</p>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import GlassCard from '../components/GlassCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 import InventoryForm from '../components/InventoryForm';
@@ -19,18 +20,33 @@ import {
 } from 'lucide-react';
 
 const Inventory = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [offices, setOffices] = useState([]);
   const [totals, setTotals] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('');
   const [selectedOffice, setSelectedOffice] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const { isDark } = useTheme();
+  const selectedType = searchParams.get('type') || '';
   useRenderCounter('Inventory');
+
+  const handleTypeChange = useCallback((type) => {
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+
+      if (type) {
+        nextParams.set('type', type);
+      } else {
+        nextParams.delete('type');
+      }
+
+      return nextParams;
+    });
+  }, [setSearchParams]);
 
   const handleAddItem = useCallback(() => {
     setEditingItem(null);
@@ -79,7 +95,7 @@ const Inventory = () => {
       ]);
       setItems(itemsRes.data.items || []);
       setCategories(categoriesRes.data.categories || []);
-      setOffices(officesRes.data.offices || []);
+      setOffices(officesRes.data.offices || officesRes.data.data || []);
       setTotals(totalsRes.data || null);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -129,7 +145,7 @@ const Inventory = () => {
       {/* Type Tabs */}
       <div className="flex gap-3 overflow-x-auto pb-2">
         <button
-          onClick={() => setSelectedType('')}
+          onClick={() => handleTypeChange('')}
           className={`
             chip
             ${!selectedType
@@ -143,7 +159,7 @@ const Inventory = () => {
         {types.map((type) => (
           <button
             key={type}
-            onClick={() => setSelectedType(type)}
+            onClick={() => handleTypeChange(type)}
             className={`
               chip
               ${selectedType === type

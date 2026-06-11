@@ -66,10 +66,12 @@ const Assets = () => {
         api.get('/assets', { params: { office_id: selectedOffice, status: selectedStatus } }),
         api.get('/offices')
       ]);
-      setAssets(assetsRes.data.assignments);
-      setOffices(officesRes.data.offices);
+      setAssets(assetsRes.data.assignments || assetsRes.data.data || []);
+      setOffices(officesRes.data.offices || officesRes.data.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setAssets([]);
+      setOffices([]);
     } finally {
       setLoading(false);
     }

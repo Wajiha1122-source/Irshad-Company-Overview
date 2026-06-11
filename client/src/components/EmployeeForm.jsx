@@ -1,509 +1,344 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Plus, Trash2, Upload, UserRound } from 'lucide-react';
 import Modal from './Modal';
-import { useTheme } from '../context/ThemeContext';
 import api from '../lib/axios';
-import { Plus, Trash2, Upload } from 'lucide-react';
+import employeeAPI from '../lib/employeeAPI';
+
+const EMPTY_EMPLOYEE = {
+  full_name: '',
+  picture: '',
+  designation: '',
+  phone_number: '',
+  email: '',
+  joining_date: '',
+  office_id: '',
+  status: 'Active',
+  work: [],
+  authority: [],
+  assets: [],
+  account_access: [],
+  stationary: []
+};
+
+const dateValue = (value) => value ? String(value).slice(0, 10) : '';
+
+const normalizeDraft = (employee = {}) => ({
+  ...EMPTY_EMPLOYEE,
+  ...employee,
+  joining_date: dateValue(employee.joining_date),
+  office_id: employee.office_id ? String(employee.office_id) : '',
+  work: employee.work || [],
+  authority: employee.authority || [],
+  assets: (employee.assets || []).map((item) => ({
+    ...item,
+    assigned_date: dateValue(item.assigned_date),
+    return_date: dateValue(item.return_date),
+    status: item.status || 'Assigned'
+  })),
+  account_access: employee.account_access || [],
+  stationary: (employee.stationary || []).map((item) => ({
+    ...item,
+    assigned_date: dateValue(item.assigned_date)
+  }))
+});
+
+const Section = ({ title, description, onAdd, addLabel, children }) => (
+  <section className="rounded-2xl border border-slate-700 bg-slate-900/45 p-4">
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div>
+        <h3 className="font-semibold text-slate-950 dark:text-white">{title}</h3>
+        <p className="mt-1 text-sm text-slate-300">{description}</p>
+      </div>
+      <button type="button" onClick={onAdd} className="ghost-button shrink-0 px-3 py-2 text-sm">
+        <Plus size={16} />
+        {addLabel}
+      </button>
+    </div>
+    {children}
+  </section>
+);
+
+const EmptyState = ({ children }) => (
+  <div className="rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-6 text-center text-sm text-slate-200">
+    {children}
+  </div>
+);
 
 const EmployeeForm = ({ isOpen, onClose, employee, onSuccess }) => {
-  const { isDark } = useTheme();
-  const [formData, setFormData] = useState({
-    full_name: '',
-    picture: '',
-    designation: '',
-    phone_number: '',
-    email: '',
-    joining_date: '',
-    office_id: '',
-    status: 'Active',
-  });
-  const [work, setWork] = useState([{ work_type: '', description: '' }]);
-  const [authority, setAuthority] = useState([{ authority_level: '' }]);
-  const [devices, setDevices] = useState([{ device_type: '', device_name: '', quantity: 1, assigned_date: '', notes: '' }]);
-  const [accounts, setAccounts] = useState([{ account_type: '', access_level: '', notes: '' }]);
-  const [stationary, setStationary] = useState([{ stationary_item: '', quantity: 1, assigned_date: '', notes: '' }]);
+  const [draft, setDraft] = useState(EMPTY_EMPLOYEE);
   const [offices, setOffices] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const [error, setError] = useState('');
+
+  const isEditing = Boolean(employee?.id);
+  const loadingEmployee = isEditing && Number(draft.id) !== Number(employee.id);
 
   useEffect(() => {
-    fetchOffices();
-    if (employee) {
-      setFormData(employee);
-      if (employee.work && employee.work.length > 0) setWork(employee.work);
-      if (employee.authority && employee.authority.length > 0) setAuthority(employee.authority);
-      if (employee.assets && employee.assets.length > 0) setDevices(employee.assets);
-      if (employee.account_access && employee.account_access.length > 0) setAccounts(employee.account_access);
-      if (employee.stationary && employee.stationary.length > 0) setStationary(employee.stationary);
-    }
-  }, [employee]);
+    if (!isOpen) return;
 
-  const fetchOffices = async () => {
+    let active = true;
+
+    const load = async () => {
+      try {
+        const requests = [api.get('/offices')];
+        if (isEditing) requests.push(employeeAPI.getById(employee.id));
+        const [officesResponse, fullEmployee] = await Promise.all(requests);
+
+        if (!active) return;
+        setError('');
+        setOffices(officesResponse.data.offices || officesResponse.data.data || []);
+        setDraft(isEditing ? normalizeDraft(fullEmployee) : EMPTY_EMPLOYEE);
+      } catch (loadError) {
+        if (active) {
+          setError(loadError.response?.data?.message || 'Unable to load the employee form.');
+        }
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [isOpen, isEditing, employee?.id]);
+
+  const setField = (field, value) => {
+    setDraft((current) => ({ ...current, [field]: value }));
+  };
+
+  const addItem = (collection, item) => {
+    setDraft((current) => ({
+      ...current,
+      [collection]: [...current[collection], item]
+    }));
+  };
+
+  const updateItem = (collection, index, field, value) => {
+    setDraft((current) => ({
+      ...current,
+      [collection]: current[collection].map((item, itemIndex) => (
+        itemIndex === index ? { ...item, [field]: value } : item
+      ))
+    }));
+  };
+
+  const removeItem = (collection, index) => {
+    setDraft((current) => ({
+      ...current,
+      [collection]: current[collection].filter((_, itemIndex) => itemIndex !== index)
+    }));
+  };
+
+  const uploadPicture = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const preview = URL.createObjectURL(file);
+    setField('picture', preview);
+    setUploadingPicture(true);
+    setError('');
+
     try {
-      const response = await api.get('/offices');
-      setOffices(response.data.offices);
-    } catch (error) {
-      console.error('Error fetching offices:', error);
+      const uploadData = new FormData();
+      uploadData.append('picture', file);
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl.replace(/\/api\/?$/, '')}/upload/profile-picture`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: uploadData
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Picture upload failed');
+      setField('picture', result.fileUrl);
+    } catch (uploadError) {
+      setField('picture', '');
+      setError(uploadError.message);
+    } finally {
+      URL.revokeObjectURL(preview);
+      setUploadingPicture(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
+    setError('');
+
+    const payload = {
+      ...draft,
+      office_id: Number(draft.office_id),
+      work: draft.work.filter((item) => item.work_type?.trim()),
+      authority: draft.authority.filter((item) => item.authority_level),
+      assets: draft.assets.filter((item) => item.device_type?.trim()),
+      account_access: draft.account_access.filter((item) => item.account_type?.trim()),
+      stationary: draft.stationary.filter((item) => item.stationary_item?.trim())
+    };
 
     try {
-      let employeeId;
-      if (employee) {
-        const result = await api.put(`/employees/${employee.id}`, formData);
-        employeeId = employee.id;
+      if (isEditing) {
+        await employeeAPI.update(employee.id, payload);
       } else {
-        const result = await api.post('/employees', formData);
-        employeeId = result.data.employee.id;
+        await employeeAPI.create(payload);
       }
-
-      // Save related data
-      await Promise.all([
-        ...work.filter(w => w.work_type).map(w => 
-          api.post('/employees/work', { employee_id: employeeId, ...w })
-        ),
-        ...authority.filter(a => a.authority_level).map(a => 
-          api.post('/employees/authority', { employee_id: employeeId, ...a })
-        ),
-        ...devices.filter(d => d.device_type).map(d => 
-          api.post('/employees/assets', { employee_id: employeeId, ...d })
-        ),
-        ...accounts.filter(a => a.account_type).map(a => 
-          api.post('/employees/account-access', { employee_id: employeeId, ...a })
-        ),
-        ...stationary.filter(s => s.stationary_item).map(s => 
-          api.post('/employees/stationary', { employee_id: employeeId, ...s })
-        ),
-      ]);
-
-      onSuccess();
+      await onSuccess();
       onClose();
-    } catch (error) {
-      console.error('Error saving employee:', error);
-      alert('Error saving employee. Please try again.');
+    } catch (saveError) {
+      setError(saveError.response?.data?.message || 'Unable to save this employee.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handlePictureUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, picture: reader.result });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const addArrayItem = (setter, array) => {
-    setter([...array, {}]);
-  };
-
-  const removeArrayItem = (setter, array, index) => {
-    setter(array.filter((_, i) => i !== index));
-  };
-
-  const updateArrayItem = (setter, array, index, field, value) => {
-    const newArray = [...array];
-    newArray[index] = { ...newArray[index], [field]: value };
-    setter(newArray);
-  };
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={employee ? 'Edit Employee' : 'Add Employee'}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            Full Name *
-          </label>
-          <input
-            type="text"
-            name="full_name"
-            value={formData.full_name}
-            onChange={handleChange}
-            required
-            className={`
-              field
-            `}
-          />
-        </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={() => {
+        if (!loading) onClose();
+      }}
+      title={isEditing ? 'Edit employee' : 'Add employee'}
+      size="large"
+    >
+      {loadingEmployee ? (
+        <div className="py-16 text-center text-slate-200">Loading employee details...</div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
+              {error}
+            </div>
+          )}
 
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            Picture
-          </label>
-          <div className="flex items-center gap-4">
-            {formData.picture && (
-              <img src={formData.picture} alt="Employee" className="w-16 h-16 rounded-full object-cover" />
-            )}
-            <label className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-300">
-              <Upload size={16} />
-              <span>Upload Picture</span>
-              <input type="file" accept="image/*" onChange={handlePictureUpload} className="hidden" />
-            </label>
-          </div>
-        </div>
+          <section className="grid gap-5 rounded-2xl border border-slate-700 bg-slate-900/45 p-4 md:grid-cols-[auto_1fr]">
+            <div className="flex flex-col items-center gap-3">
+              {draft.picture ? (
+                <img src={draft.picture} alt="" className="h-24 w-24 rounded-2xl object-cover" />
+              ) : (
+                <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800">
+                  <UserRound size={36} />
+                </div>
+              )}
+              <label className="ghost-button cursor-pointer px-3 py-2 text-sm">
+                <Upload size={16} />
+                {uploadingPicture ? 'Uploading...' : 'Photo'}
+                <input type="file" accept="image/*" onChange={uploadPicture} disabled={uploadingPicture} className="hidden" />
+              </label>
+            </div>
 
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            Designation
-          </label>
-          <input
-            type="text"
-            name="designation"
-            value={formData.designation}
-            onChange={handleChange}
-            className={`
-              field
-            `}
-          />
-        </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="sm:col-span-2">
+                <span className="mb-2 block text-sm font-medium">Full name *</span>
+                <input className="field" required value={draft.full_name} onChange={(e) => setField('full_name', e.target.value)} />
+              </label>
+              <label>
+                <span className="mb-2 block text-sm font-medium">Designation</span>
+                <input className="field" value={draft.designation} onChange={(e) => setField('designation', e.target.value)} />
+              </label>
+              <label>
+                <span className="mb-2 block text-sm font-medium">Office *</span>
+                <select className="field appearance-none" required value={draft.office_id} onChange={(e) => setField('office_id', e.target.value)}>
+                  <option value="">Select office</option>
+                  {offices.map((office) => <option key={office.id} value={office.id}>{office.name}</option>)}
+                </select>
+              </label>
+              <label>
+                <span className="mb-2 block text-sm font-medium">Email</span>
+                <input className="field" type="email" value={draft.email} onChange={(e) => setField('email', e.target.value)} />
+              </label>
+              <label>
+                <span className="mb-2 block text-sm font-medium">Phone number</span>
+                <input className="field" value={draft.phone_number} onChange={(e) => setField('phone_number', e.target.value)} />
+              </label>
+              <label>
+                <span className="mb-2 block text-sm font-medium">Joining date</span>
+                <input className="field" type="date" value={draft.joining_date} onChange={(e) => setField('joining_date', e.target.value)} />
+              </label>
+              <label>
+                <span className="mb-2 block text-sm font-medium">Status</span>
+                <select className="field appearance-none" value={draft.status} onChange={(e) => setField('status', e.target.value)}>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </label>
+            </div>
+          </section>
 
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            Email
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={`
-              field
-            `}
-          />
-        </div>
-
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            name="phone_number"
-            value={formData.phone_number}
-            onChange={handleChange}
-            className={`
-              field
-            `}
-          />
-        </div>
-
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            Joining Date
-          </label>
-          <input
-            type="date"
-            name="joining_date"
-            value={formData.joining_date}
-            onChange={handleChange}
-            className={`
-              field
-            `}
-          />
-        </div>
-
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            Office *
-          </label>
-          <select
-            name="office_id"
-            value={formData.office_id}
-            onChange={handleChange}
-            required
-            className={`
-              field appearance-none
-            `}
-          >
-            <option value="">Select Office</option>
-            {offices.map((office) => (
-              <option key={office.id} value={office.id}>
-                {office.name}
-              </option>
+          <Section title="Work" description="Responsibilities or areas of work." addLabel="Add work" onAdd={() => addItem('work', { work_type: '', description: '' })}>
+            {draft.work.length === 0 ? <EmptyState>No work details added.</EmptyState> : draft.work.map((item, index) => (
+              <div key={item.id || index} className="mb-3 grid gap-3 rounded-xl bg-slate-50 p-3 last:mb-0 dark:bg-slate-800/60 sm:grid-cols-[1fr_2fr_auto]">
+                <input className="field" placeholder="Work type" value={item.work_type || ''} onChange={(e) => updateItem('work', index, 'work_type', e.target.value)} />
+                <input className="field" placeholder="Description" value={item.description || ''} onChange={(e) => updateItem('work', index, 'description', e.target.value)} />
+                <button type="button" className="ghost-button h-11 w-11 p-0 text-rose-600" onClick={() => removeItem('work', index)} aria-label="Remove work"><Trash2 size={17} /></button>
+              </div>
             ))}
-          </select>
-        </div>
+          </Section>
 
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            Status
-          </label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className={`
-              field appearance-none
-            `}
-          >
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-        </div>
-
-        {/* Work Section */}
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <h3 className={`font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Work Information</h3>
-          {work.map((item, index) => (
-            <div key={index} className="space-y-3 mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Work Type"
-                  value={item.work_type || ''}
-                  onChange={(e) => updateArrayItem(setWork, work, index, 'work_type', e.target.value)}
-                  className="field flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeArrayItem(setWork, work, index)}
-                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                >
-                  <Trash2 size={16} />
-                </button>
+          <Section title="Authority" description="Organizational authority assigned to this employee." addLabel="Add level" onAdd={() => addItem('authority', { authority_level: '' })}>
+            {draft.authority.length === 0 ? <EmptyState>No authority level added.</EmptyState> : draft.authority.map((item, index) => (
+              <div key={item.id || index} className="mb-3 flex gap-3 last:mb-0">
+                <select className="field appearance-none" value={item.authority_level || ''} onChange={(e) => updateItem('authority', index, 'authority_level', e.target.value)}>
+                  <option value="">Select authority</option>
+                  {['Owner', 'Manager', 'Supervisor', 'Employee', 'Intern'].map((level) => <option key={level}>{level}</option>)}
+                </select>
+                <button type="button" className="ghost-button h-11 w-11 shrink-0 p-0 text-rose-600" onClick={() => removeItem('authority', index)} aria-label="Remove authority"><Trash2 size={17} /></button>
               </div>
-              <textarea
-                placeholder="Description"
-                value={item.description || ''}
-                onChange={(e) => updateArrayItem(setWork, work, index, 'description', e.target.value)}
-                rows="2"
-                className="field"
-              />
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => addArrayItem(setWork, work)}
-            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
-          >
-            <Plus size={16} /> Add Work
-          </button>
-        </div>
+            ))}
+          </Section>
 
-        {/* Authority Section */}
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <h3 className={`font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Authority</h3>
-          {authority.map((item, index) => (
-            <div key={index} className="flex gap-2 mb-3">
-              <select
-                value={item.authority_level || ''}
-                onChange={(e) => updateArrayItem(setAuthority, authority, index, 'authority_level', e.target.value)}
-                className="field flex-1 appearance-none"
-              >
-                <option value="">Select Authority Level</option>
-                <option value="Owner">Owner</option>
-                <option value="Manager">Manager</option>
-                <option value="Supervisor">Supervisor</option>
-                <option value="Employee">Employee</option>
-                <option value="Intern">Intern</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => removeArrayItem(setAuthority, authority, index)}
-                className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => addArrayItem(setAuthority, authority)}
-            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
-          >
-            <Plus size={16} /> Add Authority
-          </button>
-        </div>
-
-        {/* Devices Section */}
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <h3 className={`font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Access to Devices</h3>
-          {devices.map((item, index) => (
-            <div key={index} className="space-y-3 mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Device Type"
-                  value={item.device_type || ''}
-                  onChange={(e) => updateArrayItem(setDevices, devices, index, 'device_type', e.target.value)}
-                  className="field flex-1"
-                />
-                <input
-                  type="number"
-                  placeholder="Qty"
-                  value={item.quantity || 1}
-                  onChange={(e) => updateArrayItem(setDevices, devices, index, 'quantity', parseInt(e.target.value) || 1)}
-                  className="field w-20"
-                  min="1"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeArrayItem(setDevices, devices, index)}
-                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                >
-                  <Trash2 size={16} />
-                </button>
+          <Section title="Devices" description="Devices directly recorded against the employee profile." addLabel="Add device" onAdd={() => addItem('assets', { device_type: '', device_name: '', assigned_date: '', return_date: '', status: 'Assigned', notes: '' })}>
+            {draft.assets.length === 0 ? <EmptyState>No profile devices added.</EmptyState> : draft.assets.map((item, index) => (
+              <div key={item.id || index} className="mb-3 grid gap-3 rounded-xl bg-slate-50 p-3 last:mb-0 dark:bg-slate-800/60 sm:grid-cols-2">
+                <input className="field" placeholder="Device type" value={item.device_type || ''} onChange={(e) => updateItem('assets', index, 'device_type', e.target.value)} />
+                <input className="field" placeholder="Device name" value={item.device_name || ''} onChange={(e) => updateItem('assets', index, 'device_name', e.target.value)} />
+                <input className="field" type="date" value={item.assigned_date || ''} onChange={(e) => updateItem('assets', index, 'assigned_date', e.target.value)} />
+                <input className="field" type="date" value={item.return_date || ''} onChange={(e) => updateItem('assets', index, 'return_date', e.target.value)} />
+                <select className="field appearance-none" value={item.status || 'Assigned'} onChange={(e) => updateItem('assets', index, 'status', e.target.value)}>
+                  <option value="Assigned">Assigned</option>
+                  <option value="Returned">Returned</option>
+                  <option value="Lost">Lost</option>
+                </select>
+                <div className="flex gap-3">
+                  <input className="field" placeholder="Notes" value={item.notes || ''} onChange={(e) => updateItem('assets', index, 'notes', e.target.value)} />
+                  <button type="button" className="ghost-button h-11 w-11 shrink-0 p-0 text-rose-600" onClick={() => removeItem('assets', index)} aria-label="Remove device"><Trash2 size={17} /></button>
+                </div>
               </div>
-              <input
-                type="text"
-                placeholder="Device Name"
-                value={item.device_name || ''}
-                onChange={(e) => updateArrayItem(setDevices, devices, index, 'device_name', e.target.value)}
-                className="field"
-              />
-              <input
-                type="date"
-                value={item.assigned_date || ''}
-                onChange={(e) => updateArrayItem(setDevices, devices, index, 'assigned_date', e.target.value)}
-                className="field"
-              />
-              <textarea
-                placeholder="Notes"
-                value={item.notes || ''}
-                onChange={(e) => updateArrayItem(setDevices, devices, index, 'notes', e.target.value)}
-                rows="2"
-                className="field"
-              />
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => addArrayItem(setDevices, devices)}
-            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
-          >
-            <Plus size={16} /> Add Device
-          </button>
-        </div>
+            ))}
+          </Section>
 
-        {/* Accounts Section */}
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <h3 className={`font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Access to Company Accounts</h3>
-          {accounts.map((item, index) => (
-            <div key={index} className="space-y-3 mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Account Type"
-                  value={item.account_type || ''}
-                  onChange={(e) => updateArrayItem(setAccounts, accounts, index, 'account_type', e.target.value)}
-                  className="field flex-1"
-                />
-                <select
-                  value={item.access_level || ''}
-                  onChange={(e) => updateArrayItem(setAccounts, accounts, index, 'access_level', e.target.value)}
-                  className="field appearance-none"
-                >
-                  <option value="">Access Level</option>
+          <Section title="Account access" description="Company systems and permission levels." addLabel="Add account" onAdd={() => addItem('account_access', { account_type: '', access_level: 'View', notes: '' })}>
+            {draft.account_access.length === 0 ? <EmptyState>No account access added.</EmptyState> : draft.account_access.map((item, index) => (
+              <div key={item.id || index} className="mb-3 grid gap-3 rounded-xl bg-slate-50 p-3 last:mb-0 dark:bg-slate-800/60 sm:grid-cols-[1fr_160px_1fr_auto]">
+                <input className="field" placeholder="Account or system" value={item.account_type || ''} onChange={(e) => updateItem('account_access', index, 'account_type', e.target.value)} />
+                <select className="field appearance-none" value={item.access_level || 'View'} onChange={(e) => updateItem('account_access', index, 'access_level', e.target.value)}>
                   <option value="View">View</option>
                   <option value="Edit">Edit</option>
                   <option value="Admin">Admin</option>
                 </select>
-                <button
-                  type="button"
-                  onClick={() => removeArrayItem(setAccounts, accounts, index)}
-                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <input className="field" placeholder="Notes" value={item.notes || ''} onChange={(e) => updateItem('account_access', index, 'notes', e.target.value)} />
+                <button type="button" className="ghost-button h-11 w-11 p-0 text-rose-600" onClick={() => removeItem('account_access', index)} aria-label="Remove account"><Trash2 size={17} /></button>
               </div>
-              <textarea
-                placeholder="Notes"
-                value={item.notes || ''}
-                onChange={(e) => updateArrayItem(setAccounts, accounts, index, 'notes', e.target.value)}
-                rows="2"
-                className="field"
-              />
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => addArrayItem(setAccounts, accounts)}
-            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
-          >
-            <Plus size={16} /> Add Account Access
-          </button>
-        </div>
+            ))}
+          </Section>
 
-        {/* Stationary Section */}
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <h3 className={`font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Stationary</h3>
-          {stationary.map((item, index) => (
-            <div key={index} className="space-y-3 mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Stationary Item"
-                  value={item.stationary_item || ''}
-                  onChange={(e) => updateArrayItem(setStationary, stationary, index, 'stationary_item', e.target.value)}
-                  className="field flex-1"
-                />
-                <input
-                  type="number"
-                  placeholder="Qty"
-                  value={item.quantity || 1}
-                  onChange={(e) => updateArrayItem(setStationary, stationary, index, 'quantity', parseInt(e.target.value) || 1)}
-                  className="field w-20"
-                  min="1"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeArrayItem(setStationary, stationary, index)}
-                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                >
-                  <Trash2 size={16} />
-                </button>
+          <Section title="Stationery" description="Consumable items issued to the employee." addLabel="Add item" onAdd={() => addItem('stationary', { stationary_item: '', quantity: 1, assigned_date: '', notes: '' })}>
+            {draft.stationary.length === 0 ? <EmptyState>No stationery added.</EmptyState> : draft.stationary.map((item, index) => (
+              <div key={item.id || index} className="mb-3 grid gap-3 rounded-xl bg-slate-50 p-3 last:mb-0 dark:bg-slate-800/60 sm:grid-cols-[1fr_100px_170px_1fr_auto]">
+                <input className="field" placeholder="Item" value={item.stationary_item || ''} onChange={(e) => updateItem('stationary', index, 'stationary_item', e.target.value)} />
+                <input className="field" type="number" min="1" value={item.quantity || 1} onChange={(e) => updateItem('stationary', index, 'quantity', e.target.value)} />
+                <input className="field" type="date" value={item.assigned_date || ''} onChange={(e) => updateItem('stationary', index, 'assigned_date', e.target.value)} />
+                <input className="field" placeholder="Notes" value={item.notes || ''} onChange={(e) => updateItem('stationary', index, 'notes', e.target.value)} />
+                <button type="button" className="ghost-button h-11 w-11 p-0 text-rose-600" onClick={() => removeItem('stationary', index)} aria-label="Remove stationery"><Trash2 size={17} /></button>
               </div>
-              <input
-                type="date"
-                value={item.assigned_date || ''}
-                onChange={(e) => updateArrayItem(setStationary, stationary, index, 'assigned_date', e.target.value)}
-                className="field"
-              />
-              <textarea
-                placeholder="Notes"
-                value={item.notes || ''}
-                onChange={(e) => updateArrayItem(setStationary, stationary, index, 'notes', e.target.value)}
-                rows="2"
-                className="field"
-              />
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => addArrayItem(setStationary, stationary)}
-            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
-          >
-            <Plus size={16} /> Add Stationary
-          </button>
-        </div>
+            ))}
+          </Section>
 
-        <div className="flex gap-3 pt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="ghost-button flex-1"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="primary-button flex-1 disabled:opacity-50"
-          >
-            {loading ? 'Saving...' : employee ? 'Update' : 'Create'}
-          </button>
-        </div>
-      </form>
+          <div className="sticky bottom-0 flex justify-end gap-3 border-t border-slate-700 bg-[#111d2f] pt-4">
+            <button type="button" onClick={onClose} disabled={loading} className="ghost-button">Cancel</button>
+            <button type="submit" disabled={loading || uploadingPicture} className="primary-button disabled:opacity-50">
+              {loading ? 'Saving...' : isEditing ? 'Save changes' : 'Create employee'}
+            </button>
+          </div>
+        </form>
+      )}
     </Modal>
   );
 };

@@ -1,13 +1,24 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 require("dotenv").config();
 
 const pool = require("./config/db");
+const upload = require("./config/multer");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Log all incoming requests for debugging
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Import routes
 const authRoutes = require("./routes/auth");
@@ -28,7 +39,7 @@ app.get("/", (req, res) => {
 app.get("/db-test", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW() AS current_time");
-    
+
     res.json({
       success: true,
       message: "Database connected successfully",
@@ -42,6 +53,27 @@ app.get("/db-test", async (req, res) => {
       message: "Database connection failed",
       error: error.message,
     });
+  }
+});
+
+// File upload endpoint
+app.post("/upload/profile-picture", upload.single('picture'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const fileUrl = `/uploads/profile-pictures/${req.file.filename}`;
+    
+    res.json({
+      success: true,
+      message: "File uploaded successfully",
+      fileUrl: fileUrl,
+      filename: req.file.filename
+    });
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ message: "Error uploading file", error: error.message });
   }
 });
 

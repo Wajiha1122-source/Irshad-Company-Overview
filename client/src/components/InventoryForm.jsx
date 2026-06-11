@@ -17,11 +17,13 @@ const InventoryForm = ({ isOpen, onClose, item, onSuccess }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     fetchData();
     if (item) {
       setFormData(item);
     }
-  }, [item]);
+  }, [isOpen, item]);
 
   const fetchData = async () => {
     try {
@@ -29,8 +31,8 @@ const InventoryForm = ({ isOpen, onClose, item, onSuccess }) => {
         api.get('/inventory/categories'),
         api.get('/offices')
       ]);
-      setCategories(categoriesRes.data.categories);
-      setOffices(officesRes.data.offices);
+      setCategories(categoriesRes.data.categories || categoriesRes.data.data || []);
+      setOffices(officesRes.data.offices || officesRes.data.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     }

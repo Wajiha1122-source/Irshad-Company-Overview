@@ -3,11 +3,22 @@ const pool = require('../config/db');
 // Get All Offices
 const getAllOffices = async (req, res) => {
   try {
+    console.log('[GET /api/offices] Fetching all offices');
     const result = await pool.query('SELECT * FROM offices ORDER BY id');
-    res.json({ offices: result.rows });
+    
+    res.json({
+      success: true,
+      message: 'Offices retrieved successfully',
+      data: result.rows,
+      meta: { count: result.rows.length }
+    });
   } catch (error) {
-    console.error('Get offices error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('[GET /api/offices] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 
@@ -15,22 +26,36 @@ const getAllOffices = async (req, res) => {
 const getOfficeById = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[GET /api/offices/${id}] Fetching office details`);
+    
     const result = await pool.query('SELECT * FROM offices WHERE id = $1', [id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Office not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Office not found'
+      });
     }
     
-    res.json({ office: result.rows[0] });
+    res.json({
+      success: true,
+      message: 'Office retrieved successfully',
+      data: result.rows[0]
+    });
   } catch (error) {
-    console.error('Get office error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error(`[GET /api/offices/${req.params.id}] Error:`, error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 
 // Create Office
 const createOffice = async (req, res) => {
   try {
+    console.log('[POST /api/offices] Creating new office');
     const { name, location } = req.body;
     
     const result = await pool.query(
@@ -38,10 +63,18 @@ const createOffice = async (req, res) => {
       [name, location]
     );
     
-    res.status(201).json({ message: 'Office created successfully', office: result.rows[0] });
+    res.status(201).json({
+      success: true,
+      message: 'Office created successfully',
+      data: result.rows[0]
+    });
   } catch (error) {
-    console.error('Create office error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('[POST /api/offices] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 
@@ -49,6 +82,7 @@ const createOffice = async (req, res) => {
 const updateOffice = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[PUT /api/offices/${id}] Updating office`);
     const { name, location } = req.body;
     
     const result = await pool.query(
@@ -57,13 +91,24 @@ const updateOffice = async (req, res) => {
     );
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Office not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Office not found'
+      });
     }
     
-    res.json({ message: 'Office updated successfully', office: result.rows[0] });
+    res.json({
+      success: true,
+      message: 'Office updated successfully',
+      data: result.rows[0]
+    });
   } catch (error) {
-    console.error('Update office error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error(`[PUT /api/offices/${req.params.id}] Error:`, error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 
@@ -71,17 +116,29 @@ const updateOffice = async (req, res) => {
 const deleteOffice = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[DELETE /api/offices/${id}] Deleting office`);
     
-    const result = await pool.query('DELETE FROM offices WHERE id = $3 RETURNING *', [id]);
+    const result = await pool.query('DELETE FROM offices WHERE id = $1 RETURNING *', [id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Office not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Office not found'
+      });
     }
     
-    res.json({ message: 'Office deleted successfully' });
+    res.json({
+      success: true,
+      message: 'Office deleted successfully',
+      data: result.rows[0]
+    });
   } catch (error) {
-    console.error('Delete office error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error(`[DELETE /api/offices/${req.params.id}] Error:`, error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 

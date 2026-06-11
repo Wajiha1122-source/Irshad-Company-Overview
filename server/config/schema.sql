@@ -149,7 +149,7 @@ CREATE TABLE asset_assignments (
     asset_code VARCHAR(100) UNIQUE NOT NULL,
     asset_name VARCHAR(255) NOT NULL,
     office_id INTEGER REFERENCES offices(id) NOT NULL,
-    assigned_employee_id INTEGER REFERENCES employees(id),
+    assigned_employee_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,
     assignment_date DATE,
     return_date DATE,
     status VARCHAR(50) DEFAULT 'Available' CHECK (status IN ('Available', 'Assigned', 'Under Repair', 'Lost')),
@@ -209,72 +209,13 @@ INSERT INTO offices (name, location) VALUES
 ('IT Office', 'IT Department'),
 ('FJ Office', 'FJ Department');
 
--- Insert default inventory categories for Stationary
-INSERT INTO inventory_categories (name, type) VALUES 
-('Staplers', 'Stationary'),
-('Chitpads', 'Stationary'),
-('Diaries', 'Stationary'),
-('Punching Machines', 'Stationary'),
-('Ball Points', 'Stationary'),
-('Pencils', 'Stationary'),
-('Envelopes A4', 'Stationary'),
-('Envelopes Khaaki', 'Stationary'),
-('Scissors', 'Stationary'),
-('Markers', 'Stationary'),
-('Rubber Bands', 'Stationary'),
-('Stamps', 'Stationary'),
-('Highlighters', 'Stationary'),
-('Card Files', 'Stationary'),
-('A4 Pages', 'Stationary'),
-('White Files', 'Stationary'),
-('Calculators', 'Stationary'),
-('Tissue Boxes', 'Stationary');
-
--- Insert default inventory categories for Devices
-INSERT INTO inventory_categories (name, type) VALUES 
-('Laptops', 'Devices'),
-('Mobile Phones', 'Devices'),
-('Cameras', 'Devices'),
-('Printers', 'Devices'),
-('Wifi Routers', 'Devices'),
-('Biometric Machines', 'Devices'),
-('PTCL Phones', 'Devices'),
-('Barcode Scanners', 'Devices'),
-('Bill Printers', 'Devices'),
-('Illustrator Tablets', 'Devices'),
-('Tripods', 'Devices'),
-('Mouse', 'Devices'),
-('Projectors', 'Devices'),
-('Keyboards', 'Devices'),
-('LED Screens', 'Devices');
-
--- Insert default inventory categories for Appliances
-INSERT INTO inventory_categories (name, type) VALUES 
-('Fans', 'Appliances'),
-('AC', 'Appliances'),
-('LED Bulbs', 'Appliances'),
-('Bulbs', 'Appliances'),
-('High Volt Lights', 'Appliances'),
-('Dispensers', 'Appliances');
-
--- Insert default inventory categories for Furniture
-INSERT INTO inventory_categories (name, type) VALUES 
-('Chairs', 'Furniture'),
-('Tables', 'Furniture'),
-('Sofas', 'Furniture'),
-('Dustbins', 'Furniture'),
-('Revolving Chairs', 'Furniture'),
-('White Boards', 'Furniture');
-
--- Insert default inventory categories for Cleaning
-INSERT INTO inventory_categories (name, type) VALUES 
-('Mops', 'Cleaning'),
-('Brooms', 'Cleaning'),
-('Detergents', 'Cleaning'),
-('Phenyl', 'Cleaning'),
-('Trash Bags', 'Cleaning'),
-('Cleaning Cloths', 'Cleaning'),
-('Glass Cleaner', 'Cleaning');
+-- Insert default inventory categories
+INSERT INTO inventory_categories (name, type) VALUES
+('Stationary', 'Stationary'),
+('Appliances', 'Appliances'),
+('Furniture', 'Furniture'),
+('Devices', 'Devices'),
+('Cleaning', 'Cleaning');
 
 -- Create a function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()

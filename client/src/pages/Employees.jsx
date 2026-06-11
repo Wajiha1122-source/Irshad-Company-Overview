@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import GlassCard from '../components/GlassCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 import EmployeeForm from '../components/EmployeeForm';
-import { useTheme } from '../context/ThemeContext';
+import EmployeeView from '../components/EmployeeView';
+import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
-import useRenderCounter from '../hooks/useRenderCounter';
+import employeeAPI from '../lib/employeeAPI';
 import { 
   Plus, 
   Search, 
@@ -15,8 +16,89 @@ import {
   Mail,
   Phone,
   Building,
-  Calendar
+  Calendar,
 } from 'lucide-react';
+
+const EmployeeCard = memo(({ employee, canManage, canDelete, onView, onEdit, onDelete }) => (
+  <GlassCard hover onClick={() => onView(employee.id)} className="cursor-pointer">
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div className="flex min-w-0 items-center gap-4">
+        {employee.picture ? (
+          <img
+            src={employee.picture}
+            alt={employee.full_name}
+            loading="lazy"
+            decoding="async"
+            className="h-12 w-12 shrink-0 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-teal-500 font-bold text-white">
+            {employee.full_name?.charAt(0) || 'U'}
+          </div>
+        )}
+        <div className="min-w-0">
+          <h3 className="truncate font-semibold text-white">{employee.full_name}</h3>
+          <p className="truncate text-sm text-slate-300">{employee.designation || 'No designation'}</p>
+        </div>
+      </div>
+      <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${
+        employee.status === 'Active'
+          ? 'bg-emerald-950 text-emerald-200 ring-1 ring-emerald-700'
+          : 'bg-rose-950 text-rose-200 ring-1 ring-rose-700'
+      }`}>
+        {employee.status}
+      </span>
+    </div>
+
+    <div className="space-y-3 text-sm text-slate-200">
+      <div className="flex min-w-0 items-center gap-3">
+        <Mail size={16} className="shrink-0 text-slate-400" />
+        <span className="truncate">{employee.email || 'No email'}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <Phone size={16} className="shrink-0 text-slate-400" />
+        <span>{employee.phone_number || 'No phone number'}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <Building size={16} className="shrink-0 text-slate-400" />
+        <span>{employee.office_name || 'No office'}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <Calendar size={16} className="shrink-0 text-slate-400" />
+        <span>{employee.joining_date ? new Date(employee.joining_date).toLocaleDateString() : 'No joining date'}</span>
+      </div>
+    </div>
+
+    {(canManage || canDelete) && (
+      <div className="mt-4 flex gap-3 border-t border-slate-700 pt-4">
+        {canManage && (
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit(employee);
+            }}
+            className="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-blue-950 px-4 py-2 text-sm font-semibold text-blue-200 ring-1 ring-blue-800 hover:bg-blue-900"
+          >
+            <Edit size={14} />
+            Edit
+          </button>
+        )}
+        {canDelete && (
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(employee.id);
+            }}
+            className="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-rose-950 px-4 py-2 text-sm font-semibold text-rose-200 ring-1 ring-rose-800 hover:bg-rose-900"
+          >
+            <Trash2 size={14} />
+            Delete
+          </button>
+        )}
+      </div>
+    )}
+  </GlassCard>
+));
 
 const Employees = () => {
   const [employees, setEmployees] = useState([]);
@@ -26,8 +108,25 @@ const Employees = () => {
   const [selectedOffice, setSelectedOffice] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
-  const { isDark } = useTheme();
-  useRenderCounter('Employees');
+  const [viewEmployeeId, setViewEmployeeId] = useState(null);
+  const { user } = useAuth();
+  const canManageEmployees = user?.role === 'Owner' || user?.role === 'Manager';
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [employeesRes, officesRes] = await Promise.all([
+        api.get('/employees', { params: { office_id: selectedOffice } }),
+        api.get('/offices')
+      ]);
+      setEmployees(employeesRes.data.employees || employeesRes.data.data || []);
+      setOffices(officesRes.data.offices || officesRes.data.data || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedOffice]);
 
   const handleAddEmployee = useCallback(() => {
     setEditingEmployee(null);
@@ -39,44 +138,39 @@ const Employees = () => {
     setShowModal(true);
   }, []);
 
+  const handleViewEmployee = useCallback((employeeId) => {
+    setViewEmployeeId(employeeId);
+  }, []);
+
 
   const handleDeleteEmployee = useCallback(async (id) => {
     if (window.confirm('Are you sure you want to delete this employee?')) {
       try {
-        await api.delete(`/employees/${id}`);
-        fetchData();
+        await employeeAPI.delete(id);
+        await fetchData();
       } catch (error) {
         console.error('Error deleting employee:', error);
-        alert('Error deleting employee. Please try again.');
+        alert(error.response?.data?.message || 'Unable to delete employee.');
       }
     }
-  }, []);
+  }, [fetchData]);
 
   useEffect(() => {
-    fetchData();
-  }, [selectedOffice]);
-
-  const fetchData = useCallback(async () => {
-    try {
-      const [employeesRes, officesRes] = await Promise.all([
-        api.get('/employees', { params: { office_id: selectedOffice } }),
-        api.get('/offices')
-      ]);
-      setEmployees(employeesRes.data.employees);
-      setOffices(officesRes.data.offices);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedOffice]);
+    const timer = window.setTimeout(fetchData, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchData]);
 
 
-  const filteredEmployees = useMemo(() => employees.filter(emp =>
-    emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.designation?.toLowerCase().includes(searchTerm.toLowerCase())
-  ), [employees, searchTerm]);
+  const filteredEmployees = useMemo(() => {
+    const query = deferredSearchTerm.trim().toLowerCase();
+    if (!query) return employees;
+
+    return employees.filter((employee) => (
+      employee.full_name?.toLowerCase().includes(query) ||
+      employee.email?.toLowerCase().includes(query) ||
+      employee.designation?.toLowerCase().includes(query)
+    ));
+  }, [employees, deferredSearchTerm]);
 
 if (loading) {
   return <SkeletonLoader />;
@@ -93,13 +187,15 @@ if (loading) {
             Manage company employees
           </p>
         </div>
-        <button
-          onClick={handleAddEmployee}
-          className="primary-button w-full sm:w-auto"
-        >
-          <Plus size={18} />
-          Add Employee
-        </button>
+        {canManageEmployees && (
+          <button
+            onClick={handleAddEmployee}
+            className="primary-button w-full sm:w-auto"
+          >
+            <Plus size={18} />
+            Add Employee
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -138,84 +234,22 @@ if (loading) {
       {/* Employees Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEmployees.map((employee) => (
-            <GlassCard key={employee.id} hover>
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-4">
-                  {employee.picture ? (
-                    <img 
-                      src={employee.picture} 
-                      alt={employee.full_name} 
-                      className="h-12 w-12 shrink-0 rounded-full object-cover shadow-md"
-                    />
-                  ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-teal-500 font-bold text-white shadow-md shadow-blue-600/20">
-                      {employee.full_name?.charAt(0) || 'U'}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <h3 className="truncate font-semibold text-slate-950 dark:text-white">{employee.full_name}</h3>
-                    <p className={`truncate text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {employee.designation}
-                    </p>
-                  </div>
-                </div>
-                <span className={`
-                  px-3 py-1.5 rounded-full text-xs font-medium
-                  ${employee.status === 'Active' 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-red-100 text-red-700'
-                  }
-                `}>
-                  {employee.status}
-                </span>
-              </div>
-
-              <div className="space-y-3 text-sm">
-                <div className="flex min-w-0 items-center gap-3">
-                  <Mail size={16} className={isDark ? 'text-gray-400' : 'text-gray-500'} />
-                  <span className={`truncate ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{employee.email}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone size={16} className={isDark ? 'text-gray-400' : 'text-gray-500'} />
-                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{employee.phone_number}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Building size={16} className={isDark ? 'text-gray-400' : 'text-gray-500'} />
-                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{employee.office_name}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Calendar size={16} className={isDark ? 'text-gray-400' : 'text-gray-500'} />
-                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>
-                    {employee.joining_date ? new Date(employee.joining_date).toLocaleDateString() : 'N/A'}
-                  </span>
-                </div>
-              </div>
-
-
-              <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button 
-                  onClick={() => handleEditEmployee(employee)}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/50"
-                >
-                  <Edit size={14} />
-                  Edit
-                </button>
-                <button 
-                  onClick={() => handleDeleteEmployee(employee.id)}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50"
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              </div>
-            </GlassCard>
-          ))}
+          <EmployeeCard
+            key={employee.id}
+            employee={employee}
+            canManage={canManageEmployees}
+            canDelete={user?.role === 'Owner'}
+            onView={handleViewEmployee}
+            onEdit={handleEditEmployee}
+            onDelete={handleDeleteEmployee}
+          />
+        ))}
       </div>
 
       {filteredEmployees.length === 0 && (
         <div className="text-center py-16">
-          <UserPlus size={48} className={isDark ? 'text-gray-600 mx-auto' : 'text-gray-400 mx-auto'} />
-          <p className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          <UserPlus size={48} className="mx-auto text-slate-500" />
+          <p className="mt-4 text-slate-300">
             No employees found
           </p>
         </div>
@@ -226,6 +260,11 @@ if (loading) {
         onClose={() => setShowModal(false)}
         employee={editingEmployee}
         onSuccess={fetchData}
+      />
+      <EmployeeView
+        isOpen={!!viewEmployeeId}
+        onClose={() => setViewEmployeeId(null)}
+        employeeId={viewEmployeeId}
       />
     </div>
   );

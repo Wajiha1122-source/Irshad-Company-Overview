@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   Users,
   Package,
-  Laptop,
   BarChart3,
   FileText,
   LogOut,
@@ -12,12 +11,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { SIDEBAR_WIDTH } from '../constants/layout';
-import useRenderCounter from '../hooks/useRenderCounter';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
-  useRenderCounter('Sidebar');
 
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -34,35 +31,25 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/75 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className="
+        className={`
           fixed left-0 top-0 z-50 h-full
-          bg-[rgba(255,255,255,0.06)]
-          border-r border-white/10
-          backdrop-blur-md
-          shadow-2xl shadow-black/40
+          bg-slate-900
+          border-r border-slate-700
+          shadow-xl shadow-black/30
           text-white
           transform transition-transform duration-300 ease-out
-        "
-        style={{
-          width: SIDEBAR_WIDTH,
-          transform: isOpen ? 'translateX(0)' : 'translateX(-100%)'
-        }}
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+        `}
+        style={{ width: SIDEBAR_WIDTH }}
       >
-        <style>{`
-          @media (min-width: 1024px) {
-            aside {
-              transform: translateX(0) !important;
-            }
-          }
-        `}</style>
-
         <div className="flex h-full flex-col p-6">
 
           {/* Header */}
