@@ -1,4 +1,5 @@
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import GlassCard from '../components/GlassCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 import EmployeeForm from '../components/EmployeeForm';
@@ -101,10 +102,11 @@ const EmployeeCard = memo(({ employee, canManage, canDelete, onView, onEdit, onD
 ));
 
 const Employees = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [employees, setEmployees] = useState([]);
   const [offices, setOffices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const searchTerm = searchParams.get('q') || '';
   const [selectedOffice, setSelectedOffice] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -112,6 +114,16 @@ const Employees = () => {
   const { user } = useAuth();
   const canManageEmployees = user?.role === 'Owner' || user?.role === 'Manager';
   const deferredSearchTerm = useDeferredValue(searchTerm);
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+      if (value.trim()) nextParams.set('q', value);
+      else nextParams.delete('q');
+      return nextParams;
+    }, { replace: true });
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -168,7 +180,10 @@ const Employees = () => {
     return employees.filter((employee) => (
       employee.full_name?.toLowerCase().includes(query) ||
       employee.email?.toLowerCase().includes(query) ||
-      employee.designation?.toLowerCase().includes(query)
+      employee.designation?.toLowerCase().includes(query) ||
+      employee.phone_number?.toLowerCase().includes(query) ||
+      employee.office_name?.toLowerCase().includes(query) ||
+      employee.status?.toLowerCase().includes(query)
     ));
   }, [employees, deferredSearchTerm]);
 
@@ -207,7 +222,7 @@ if (loading) {
               type="text"
               placeholder="Search employees..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className={`
                 field pl-11
               `}
@@ -250,7 +265,7 @@ if (loading) {
         <div className="text-center py-16">
           <UserPlus size={48} className="mx-auto text-slate-500" />
           <p className="mt-4 text-slate-300">
-            No employees found
+            {searchTerm ? `No employees match "${searchTerm}"` : 'No employees found'}
           </p>
         </div>
       )}

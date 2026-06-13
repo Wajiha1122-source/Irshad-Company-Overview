@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import GlassCard from '../components/GlassCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AssetForm from '../components/AssetForm';
@@ -17,15 +18,43 @@ import {
 } from 'lucide-react';
 
 const Assets = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [assets, setAssets] = useState([]);
   const [offices, setOffices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const searchTerm = searchParams.get('q') || '';
   const [selectedOffice, setSelectedOffice] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
   const { isDark } = useTheme();
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [assetsRes, officesRes] = await Promise.all([
+        api.get('/assets', { params: { office_id: selectedOffice, status: selectedStatus } }),
+        api.get('/offices')
+      ]);
+      setAssets(assetsRes.data.assignments || assetsRes.data.data || []);
+      setOffices(officesRes.data.offices || officesRes.data.data || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setAssets([]);
+      setOffices([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedOffice, selectedStatus]);
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+      if (value.trim()) nextParams.set('q', value);
+      else nextParams.delete('q');
+      return nextParams;
+    }, { replace: true });
+  };
 
   const handleAddAsset = () => {
     setEditingAsset(null);
@@ -57,30 +86,23 @@ const Assets = () => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [selectedOffice, selectedStatus]);
+    const timer = window.setTimeout(fetchData, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchData]);
 
-  const fetchData = async () => {
-    try {
-      const [assetsRes, officesRes] = await Promise.all([
-        api.get('/assets', { params: { office_id: selectedOffice, status: selectedStatus } }),
-        api.get('/offices')
-      ]);
-      setAssets(assetsRes.data.assignments || assetsRes.data.data || []);
-      setOffices(officesRes.data.offices || officesRes.data.data || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setAssets([]);
-      setOffices([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const filteredAssets = assets.filter((asset) => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return true;
 
-  const filteredAssets = assets.filter(asset =>
-    asset.asset_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    asset.asset_code?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    return [
+      asset.asset_name,
+      asset.asset_code,
+      asset.office_name,
+      asset.employee_name,
+      asset.status,
+      asset.notes,
+    ].some((value) => String(value ?? '').toLowerCase().includes(query));
+  });
 
   if (loading) {
     return (
@@ -152,7 +174,7 @@ const Assets = () => {
               type="text"
               placeholder="Search assets..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className={`
                 field pl-11
               `}
@@ -245,7 +267,7 @@ const Assets = () => {
         <div className="text-center py-16">
           <Laptop size={48} className={isDark ? 'text-gray-600 mx-auto' : 'text-gray-400 mx-auto'} />
           <p className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            No assets found
+            {searchTerm ? `No assets match "${searchTerm}"` : 'No assets found'}
           </p>
         </div>
       )}

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <div className="relative flex min-h-screen text-white overflow-hidden">
@@ -23,7 +24,10 @@ export default function Layout() {
       <div
         className="relative z-10 flex min-h-screen flex-1 flex-col lg:ml-[300px]"
       >
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <Header
+          key={`${location.pathname}${location.search}`}
+          onMenuClick={() => setSidebarOpen(true)}
+        />
 
         <main className="relative z-10 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="mx-auto w-full max-w-[1600px]">

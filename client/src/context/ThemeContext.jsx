@@ -1,21 +1,23 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useEffect, useMemo } from 'react';
 
 const ThemeContext = createContext(null);
 
 export const ThemeProvider = ({ children }) => {
-  // FIXED THEME ONLY (NO DARK/LIGHT SWITCH)
   const isDark = true;
 
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+    document.documentElement.style.colorScheme = 'dark';
+  }, []);
+
   const toggleTheme = () => {
-    // disabled intentionally (single theme mode)
     console.log('Theme switching disabled: single theme mode');
   };
 
-  // ✅ IMPORTANT FIX: stable reference (prevents re-renders)
   const value = useMemo(() => ({
     isDark,
     toggleTheme,
-  }), []);
+  }), [isDark]);
 
   return (
     <ThemeContext.Provider value={value}>
@@ -24,6 +26,7 @@ export const ThemeProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {

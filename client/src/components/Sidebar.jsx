@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Users,
   Package,
+  Laptop,
   BarChart3,
   FileText,
   LogOut,
@@ -20,6 +21,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/employees', icon: Users, label: 'Employees' },
     { path: '/inventory', icon: Package, label: 'Inventory' },
+    { path: '/assets', icon: Laptop, label: 'Assets' },
     { path: '/analytics', icon: BarChart3, label: 'Analytics' },
     { path: '/reports', icon: FileText, label: 'Reports' },
   ];

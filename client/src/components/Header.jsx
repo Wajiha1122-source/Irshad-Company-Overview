@@ -1,10 +1,15 @@
-import { Menu, Bell, Search } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Menu, Bell, Search, X } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Header = ({ onMenuClick }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState(
+    () => new URLSearchParams(location.search).get('q') || ''
+  );
 
   const pageTitles = {
     '/dashboard': 'Dashboard',
@@ -15,6 +20,30 @@ const Header = ({ onMenuClick }) => {
     '/reports': 'Reports',
   };
   const title = pageTitles[location.pathname] || 'Dashboard';
+  const searchablePages = ['/employees', '/inventory', '/assets'];
+
+  const getSearchPath = (query) => {
+    const normalized = query.toLowerCase();
+
+    if (/\b(asset|assignment|assigned)\b/.test(normalized)) return '/assets';
+    if (/\b(inventory|item|stock|stationary|furniture|appliance|cleaning|laptop|device)\b/.test(normalized)) return '/inventory';
+    if (/\b(employee|staff|person|email|designation)\b/.test(normalized)) return '/employees';
+    if (searchablePages.includes(location.pathname)) return location.pathname;
+    return '/employees';
+  };
+
+  const handleSearch = (event) => {
+    event.preventDefault();
+    const query = searchTerm.trim();
+    if (!query) return;
+
+    navigate(`${getSearchPath(query)}?q=${encodeURIComponent(query)}`);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    if (searchablePages.includes(location.pathname)) navigate(location.pathname);
+  };
 
   return (
     <header className="sticky top-0 z-30 h-[72px] border-b border-slate-800 bg-slate-950">
@@ -31,14 +60,34 @@ const Header = ({ onMenuClick }) => {
         </div>
           
         <div className="hidden flex-1 justify-center md:flex">
-          <div className="relative w-[400px] max-w-full">
+          <form onSubmit={handleSearch} className="relative w-[400px] max-w-full" role="search">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
               type="text"
-              placeholder="Search records, reports, assets..."
-              className="h-11 w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 pl-11 pr-4 text-sm text-white placeholder-slate-400 shadow-sm focus:outline-none focus:ring-4 focus:ring-teal-400/20"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search employees, inventory, assets..."
+              aria-label="Search company records"
+              className="h-11 w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 pl-11 pr-20 text-sm text-white placeholder-slate-400 shadow-sm focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-400/20"
             />
-          </div>
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="absolute right-10 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+                aria-label="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
+            <button
+              type="submit"
+              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-teal-500/15 text-teal-300 hover:bg-teal-500/25 hover:text-white"
+              aria-label="Run search"
+            >
+              <Search size={16} />
+            </button>
+          </form>
         </div>
 
         <div className="flex min-w-0 items-center gap-4">

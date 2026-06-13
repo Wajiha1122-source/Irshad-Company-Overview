@@ -12,27 +12,32 @@ import {
   Filter,
   Edit,
   Trash2,
-  Package,
-  TrendingUp,
-  TrendingDown,
-  Save,
-  X
+  Package
 } from 'lucide-react';
 
 const Inventory = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [offices, setOffices] = useState([]);
   const [totals, setTotals] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const searchTerm = searchParams.get('q') || '';
   const [selectedOffice, setSelectedOffice] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const { isDark } = useTheme();
   const selectedType = searchParams.get('type') || '';
   useRenderCounter('Inventory');
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+      if (value.trim()) nextParams.set('q', value);
+      else nextParams.delete('q');
+      return nextParams;
+    }, { replace: true });
+  };
 
   const handleTypeChange = useCallback((type) => {
     setSearchParams((currentParams) => {
@@ -70,37 +75,28 @@ const Inventory = () => {
     }
   }, []);
 
-
-
   const typeClasses = {
-    Stationary: 'text-blue-600 bg-blue-50 dark:bg-blue-950/30',
-    Devices: 'text-violet-600 bg-violet-50 dark:bg-violet-950/30',
-    Appliances: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30',
-    Furniture: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30',
-    Cleaning: 'text-rose-600 bg-rose-50 dark:bg-rose-950/30',
+    Stationary: 'bg-blue-950/60 text-blue-300 ring-1 ring-blue-800',
+    Devices: 'bg-violet-950/60 text-violet-300 ring-1 ring-violet-800',
+    Appliances: 'bg-emerald-950/60 text-emerald-300 ring-1 ring-emerald-800',
+    Furniture: 'bg-amber-950/60 text-amber-300 ring-1 ring-amber-800',
+    Cleaning: 'bg-rose-950/60 text-rose-300 ring-1 ring-rose-800',
   };
-
-  useEffect(() => {
-    fetchData();
-  }, [selectedType, selectedOffice]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [itemsRes, categoriesRes, officesRes, totalsRes] = await Promise.all([
-        api.get('/inventory/items', { params: { type: selectedType, office_id: selectedOffice } }).catch(e => ({ data: { items: [] } })),
-        api.get('/inventory/categories').catch(e => ({ data: { categories: [] } })),
-        api.get('/offices').catch(e => ({ data: { offices: [] } })),
-        api.get('/inventory/totals', { params: { type: selectedType, office_id: selectedOffice } }).catch(e => ({ data: null }))
+      const [itemsRes, officesRes, totalsRes] = await Promise.all([
+        api.get('/inventory/items', { params: { type: selectedType, office_id: selectedOffice } }).catch(() => ({ data: { items: [] } })),
+        api.get('/offices').catch(() => ({ data: { offices: [] } })),
+        api.get('/inventory/totals', { params: { type: selectedType, office_id: selectedOffice } }).catch(() => ({ data: null }))
       ]);
       setItems(itemsRes.data.items || []);
-      setCategories(categoriesRes.data.categories || []);
       setOffices(officesRes.data.offices || officesRes.data.data || []);
       setTotals(totalsRes.data || null);
     } catch (error) {
       console.error('Error fetching data:', error);
       setItems([]);
-      setCategories([]);
       setOffices([]);
       setTotals(null);
     } finally {
@@ -108,12 +104,24 @@ const Inventory = () => {
     }
   }, [selectedType, selectedOffice]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(fetchData, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchData]);
+
   const filteredItems = useMemo(() => items.filter(item => {
     if (!item) return false;
-    const name = item.name || '';
-    const categoryName = item.category_name || '';
-    return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           categoryName.toLowerCase().includes(searchTerm.toLowerCase());
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return true;
+
+    return [
+      item.name,
+      item.category_name,
+      item.category_type,
+      item.office_name,
+      item.notes,
+      item.quantity,
+    ].some((value) => String(value ?? '').toLowerCase().includes(query));
   }), [items, searchTerm]);
 
  if (loading) {
@@ -182,7 +190,7 @@ const Inventory = () => {
               type="text"
               placeholder="Search items..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className={`
                 field pl-11
               `}
@@ -272,7 +280,7 @@ const Inventory = () => {
         <div className="text-center py-16">
           <Package size={48} className={isDark ? 'text-gray-600 mx-auto' : 'text-gray-400 mx-auto'} />
           <p className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            No inventory items found
+            {searchTerm ? `No inventory items match "${searchTerm}"` : 'No inventory items found'}
           </p>
         </div>
       )}
