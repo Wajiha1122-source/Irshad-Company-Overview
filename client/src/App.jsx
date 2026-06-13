@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -15,6 +14,7 @@ import Inventory from './pages/Inventory';
 import Assets from './pages/Assets';
 import Analytics from './pages/Analytics';
 import Reports from './pages/Reports';
+import SearchResults from './pages/SearchResults';
 
 const queryClient = new QueryClient();
 
@@ -43,6 +43,7 @@ export default function App() {
                   <Route path="assets" element={<Assets />} />
                   <Route path="analytics" element={<Analytics />} />
                   <Route path="reports" element={<Reports />} />
+                  <Route path="search" element={<SearchResults />} />
 
                 </Route>
 

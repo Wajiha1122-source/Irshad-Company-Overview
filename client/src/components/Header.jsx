@@ -18,31 +18,21 @@ const Header = ({ onMenuClick }) => {
     '/assets': 'Asset Assignments',
     '/analytics': 'Analytics',
     '/reports': 'Reports',
+    '/search': 'Search',
   };
   const title = pageTitles[location.pathname] || 'Dashboard';
-  const searchablePages = ['/employees', '/inventory', '/assets'];
-
-  const getSearchPath = (query) => {
-    const normalized = query.toLowerCase();
-
-    if (/\b(asset|assignment|assigned)\b/.test(normalized)) return '/assets';
-    if (/\b(inventory|item|stock|stationary|furniture|appliance|cleaning|laptop|device)\b/.test(normalized)) return '/inventory';
-    if (/\b(employee|staff|person|email|designation)\b/.test(normalized)) return '/employees';
-    if (searchablePages.includes(location.pathname)) return location.pathname;
-    return '/employees';
-  };
 
   const handleSearch = (event) => {
     event.preventDefault();
     const query = searchTerm.trim();
     if (!query) return;
 
-    navigate(`${getSearchPath(query)}?q=${encodeURIComponent(query)}`);
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   const clearSearch = () => {
     setSearchTerm('');
-    if (searchablePages.includes(location.pathname)) navigate(location.pathname);
+    if (location.pathname === '/search') navigate('/dashboard');
   };
 
   return (

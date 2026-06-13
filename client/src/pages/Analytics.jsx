@@ -12,8 +12,8 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
-  Legend, 
+  Tooltip,
+  Legend,
   ResponsiveContainer 
 } from 'recharts';
 import { Users, Package, TrendingUp } from 'lucide-react';
@@ -25,10 +25,6 @@ const Analytics = () => {
   const [inventoryStats, setInventoryStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const { isDark } = useTheme();
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
 
   const fetchAnalytics = async () => {
     try {
@@ -47,9 +43,31 @@ const Analytics = () => {
     }
   };
 
+  useEffect(() => {
+    const timer = window.setTimeout(fetchAnalytics, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
  if (loading) {
   return <SkeletonLoader />;
 }
+
+  const employeesByOffice = (employeeStats?.by_office || [])
+    .map((office) => ({
+      name: office.office_name || 'Unknown office',
+      count: Number(office.count || 0),
+    }))
+    .filter((office) => office.count > 0);
+
+  const employeesByAuthority = (employeeStats?.by_authority || []).map((item) => ({
+    ...item,
+    count: Number(item.count || 0),
+  }));
+
+  const inventoryByType = (inventoryStats?.by_type || []).map((item) => ({
+    ...item,
+    total: Number(item.total || 0),
+  }));
 
   return (
     <div className="space-y-7">
@@ -69,25 +87,42 @@ const Analytics = () => {
             </div>
             <h2 className="text-xl font-semibold">Employees by Office</h2>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={employeeStats?.by_office || []}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="count"
-              >
-                {(employeeStats?.by_office || []).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {employeesByOffice.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={employeesByOffice}
+                  cx="50%"
+                  cy="50%"
+                  label={false}
+                  outerRadius={82}
+                  dataKey="count"
+                  nameKey="name"
+                >
+                  {employeesByOffice.map((office, index) => (
+                    <Cell key={office.name} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#111827',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    color: '#f8fafc',
+                  }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  iconType="circle"
+                  formatter={(value) => <span className="text-slate-200">{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-[300px] items-center justify-center text-slate-400">
+              No employee office data available
+            </div>
+          )}
         </GlassCard>
 
         <GlassCard>
@@ -98,7 +133,7 @@ const Analytics = () => {
             <h2 className="text-xl font-semibold">Employees by Authority</h2>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={employeeStats?.by_authority || []}>
+            <BarChart data={employeesByAuthority}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
               <XAxis dataKey="authority_level" stroke={isDark ? '#9ca3af' : '#6b7280'} />
               <YAxis stroke={isDark ? '#9ca3af' : '#6b7280'} />
@@ -125,7 +160,7 @@ const Analytics = () => {
             <h2 className="text-xl font-semibold">Inventory by Type</h2>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={inventoryStats?.by_type || []}>
+            <BarChart data={inventoryByType}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
               <XAxis dataKey="type" stroke={isDark ? '#9ca3af' : '#6b7280'} />
               <YAxis stroke={isDark ? '#9ca3af' : '#6b7280'} />
@@ -160,7 +195,7 @@ const Analytics = () => {
                 <div className="flex-1">
                   <p className="font-medium">{item.name}</p>
                   <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {item.category_type} - {item.office_name}
+                    {item.type} - {item.office_name}
                   </p>
                 </div>
                 <span className="text-2xl font-bold text-blue-600">{item.quantity}</span>
@@ -190,7 +225,7 @@ const Analytics = () => {
               >
                 <p className="font-semibold mb-1">{item.name}</p>
                 <p className={`text-sm mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {item.category_type} - {item.office_name}
+                  {item.type} - {item.office_name}
                 </p>
                 <p className="text-2xl font-bold text-red-600">{item.quantity} left</p>
               </div>
