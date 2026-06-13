@@ -149,7 +149,11 @@ const EmployeeForm = ({ isOpen, onClose, employee, onSuccess }) => {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Picture upload failed');
-      setField('picture', result.fileUrl);
+      const backendUrl = apiUrl.replace(/\/api\/?$/, '');
+      const pictureUrl = result.fileUrl?.startsWith('/')
+        ? `${backendUrl}${result.fileUrl}`
+        : result.fileUrl;
+      setField('picture', pictureUrl);
     } catch (uploadError) {
       setField('picture', '');
       setError(uploadError.message);
