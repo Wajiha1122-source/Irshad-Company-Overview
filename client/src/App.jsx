@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './Layout'; // 👈 IMPORTANT: move Layout to separate file OR keep below (recommended)
 
 import Login from './pages/Login';
+import SsoComplete from './pages/SsoComplete';
 import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
 import Inventory from './pages/Inventory';
@@ -28,6 +29,7 @@ export default function App() {
 
               {/* PUBLIC */}
               <Route path="/login" element={<Login />} />
+              <Route path="/sso-complete" element={<SsoComplete />} />
 
               {/* PROTECTED WRAPPER */}
               <Route element={<ProtectedRoute />}>

@@ -29,6 +29,7 @@ const assetRoutes = require("./routes/assets");
 const activityRoutes = require("./routes/activity");
 const notificationRoutes = require("./routes/notifications");
 const analyticsRoutes = require("./routes/analytics");
+const { ssoLogin } = require("./controllers/authController");
 
 // Test route
 app.get("/", (req, res) => {
@@ -78,6 +79,7 @@ app.post("/upload/profile-picture", upload.single('picture'), (req, res) => {
 });
 
 // API Routes
+app.get("/sso-login", ssoLogin);
 app.use("/api/auth", authRoutes);
 app.use("/api/offices", officeRoutes);
 app.use("/api/employees", employeeRoutes);
