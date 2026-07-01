@@ -5,6 +5,10 @@
   "outputDirectory": "client/dist",
   "rewrites": [
     {
+      "source": "/sso-login",
+      "destination": "https://irshad-company-overview.onrender.com/api/auth/sso-login"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
